@@ -31,6 +31,11 @@ on:
         required: true
         type: boolean
         default: 'true'
+      container_enable:
+        description: '是否开启容器（Docker/LXC）支持（实验性）'
+        required: true
+        type: boolean
+        default: 'false'
       kpm_enable:
         description: '是否开启kpm(builtin-使用(re)sukisu内置kpm, kpn-使用独立kpm实现(支持任意KSU/面具环境); 不需要可保持默认关闭)'
         required: true
@@ -323,7 +328,48 @@ jobs:
             cd ./KernelSU
             patch -p1 < 10_enable_susfs_for_ksu.patch || true
           fi
-          
+
+      # container configs from https://github.com/snowwolf725/oppo_oplus_realme_sm8650/blob/main/.github/workflows/build_A15_sn.yml
+      - name: 应用容器支持补丁
+        if: inputs.container_enable
+        run: |
+          echo "正在添加容器支持补丁..."
+          cd kernel_workspace
+          CONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
+
+          # Docker configs
+          echo "CONFIG_IP_VS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_MODULE_FORCE_LOAD=y" >> "$CONFIG_FILE"
+          echo "CONFIG_PID_NS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IPC_NS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_USER_NS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_CGROUP_DEVICE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_BRIDGE_NETFILTER=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETFILTER_XT_MATCH_IPVS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP6_NF_NAT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_POSIX_MQUEUE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_CGROUP_PIDS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_DEVMEM=y" >> "$CONFIG_FILE"
+          echo "CONFIG_STRICT_DEVMEM=n" >> "$CONFIG_FILE"
+
+          # lxc
+          echo "CONFIG_BPF_LSM=y" >> "$CONFIG_FILE"
+          echo "CONFIG_BPF_PRELOAD=y" >> "$CONFIG_FILE"
+          #echo "CONFIG_FUNCTION_TRACER=n" >> "$CONFIG_FILE"
+          echo "CONFIG_FTRACE_SYSCALLS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_PSTORE_DEFLATE_COMPRESS=n" >> "$CONFIG_FILE"
+          echo "CONFIG_NF_NAT_IPV4=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NF_NAT_IPV6=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETFILTER_XT_TARGET_CHECKSUM=y" >> "$CONFIG_FILE"
+          echo "CONFIG_FHANDLE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_UNIX_DIAG=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETLINK_DIAG=y" >> "$CONFIG_FILE"
+          echo "CONFIG_PACKET_DIAG=y" >> "$CONFIG_FILE"
+          echo "CONFIG_MACVLAN=y" >> "$CONFIG_FILE"
+
+
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         if: inputs.lz4_enable
         run: |
@@ -737,6 +783,7 @@ jobs:
             - ADIOS IO调度器支持：${{ github.event.inputs.adios_enable }}
             - Re-Kernel支持：${{ github.event.inputs.rekernel_enable }}
             - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
+            - 容器支持：${{ github.event.inputs.container_enable }}
             - SukiSU Ultra管理器下载：[SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
             - KernelSU Next管理器下载：[KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next/releases)
             - KSU原版管理器下载：[KernelSU](https://github.com/tiann/KernelSU/releases)
