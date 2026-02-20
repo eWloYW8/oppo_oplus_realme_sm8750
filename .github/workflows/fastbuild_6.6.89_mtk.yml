@@ -10,6 +10,11 @@ env:
 on:
   workflow_dispatch:
     inputs:
+      actions_worker:
+        description: '用于编译的 github actions worker'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
       ksu_type:
         description: 'KernelSU分支(ReSukiSU/SukiSU Ultra/KernelSU Next/KSU(原版)/无内置KSU,默认ReSukiSU)'
         required: true
@@ -92,7 +97,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.actions_worker }}
     outputs:
       ksuver: ${{ steps.ksu_version.outputs.ksuver }}
     permissions:
